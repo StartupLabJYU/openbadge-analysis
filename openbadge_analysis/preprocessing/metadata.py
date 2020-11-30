@@ -157,12 +157,12 @@ def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=Fal
                 yield (data['timestamp'],
                        str(data['member']),
                        float(data['voltage']))
-            except:
+            except Exception as e:
                 print("Error in line#:", i, line)
                 if skip_errors:
                     continue
                 else:
-                    raise
+                    raise e
 
     df = pd.DataFrame(readfile(fileobject, skip_errors), columns=['timestamp', 'member', 'voltage'])
 
@@ -225,12 +225,12 @@ def sample_counts(fileobject, tz='US/Eastern', keep_type=False, skip_errors=Fals
                        str(type),
                        str(data['member']),
                        int(cnt))
-            except:
+            except Exception as e:
                 print("Error in line#:", i, line)
                 if skip_errors:
                     continue
                 else:
-                    raise
+                    raise e
 
     df = pd.DataFrame(readfile(fileobject, skip_errors), columns=['timestamp' ,'type', 'member',
                                                      'cnt'])

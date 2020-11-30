@@ -448,8 +448,7 @@ def percentage_participation(df_stitched_all, labels, member_names=None):
     """
     participation_values = {}
 
-    for i in range(len(df_stitched_all)):
-        label = labels[i]
+    for i, label in enumerate(df_stitched_all):
         df_stitched_list = df_stitched_all[i]
         if len(df_stitched_list) == 0:
             print('No meetings for ' + str(label))
@@ -489,7 +488,7 @@ def participation_chart(df_stitched_all, labels, metric, choose=False, member=No
     :return: bokeh plot
     """
     participation_values = percentage_participation(df_stitched_all, labels, member_names)
-    if isinstance(participation_values, basestring):
+    if isinstance(participation_values, str):
         participation_values = ast.literal_eval(participation_values)
     if participation_values is None:
         print('ERROR: No participation values found for Member ' + member)

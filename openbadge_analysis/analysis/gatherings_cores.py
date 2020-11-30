@@ -108,7 +108,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
 
     # Mapping group index -> gathering index
     # It's initialized as `i -> i` for all i
-    grp2gth = dict(zip(range(n), range(n)))
+    grp2gth = dict(zip(range(n)), range(n))
     # Mapping gathering index -> groups indices
     # It's initialized as `i -> [i]` for all i
     gth2grp = dict(zip(range(n), [[i] for i in range(n)]))
@@ -151,7 +151,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
 
     # Store each gathering in a DataFrame
     gatherings = [groups.iloc[gs].copy().set_index('datetime').sort_index()['members']
-                  for gs in gth2grp.itervalues()]
+                  for gs in gth2grp.values()]
 
     return gatherings
 
@@ -218,7 +218,7 @@ def extract_cores(gatherings):
               frozenset(_extract_core(gathering))) for gathering in gatherings if len(gathering) > 2]
 
     # Filter out cores with a single individual
-    cores = filter(lambda x: len(x[2]) > 1, cores)
+    cores = [x for x in cores if len(x[2]) > 1]
 
     # Store the cores in a DataFrame
     cores = pd.DataFrame(cores, columns=['start', 'end', 'members'])

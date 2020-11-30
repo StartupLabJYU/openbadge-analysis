@@ -96,13 +96,13 @@ def plot_sec(df_meet, time, figsize=(30,15), raw=False, sec=False, cor=False, st
     df_meet.loc[time].plot(figsize=figsize)
     df_meetsec = get_meet_sec(df_meet)
     if raw:
-        print df_meet.loc[time]
+        print(df_meet.loc[time])
     if sec:
-        print df_meetsec.loc[time]
+        print(df_meetsec.loc[time])
     if cor:
-        print df_meetsec.loc[time].corr()
+        print(df_meetsec.loc[time].corr())
     if stat:
-        print df_meetsec.loc[time].agg([np.mean, np.std])
+        print(df_meetsec.loc[time].agg([np.mean, np.std]))
 
     return df_meet.loc[time]
 

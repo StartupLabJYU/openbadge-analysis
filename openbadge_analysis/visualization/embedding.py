@@ -252,10 +252,10 @@ def members_2d_embedding_with_beacons(m2m, m2b, beacons_position, prev=None, m2m
     
     m = len(members)
     # Custom weight for member-to-member
-    W[m:,m:] = m2m_weight * W[m:,m:]
+    W[m:, m:] = m2m_weight * W[m:, m:]
     # Custom weight for member-to-beacon
-    W[m:,:m] = m2b_weight * W[m:,:m]
-    W[:m,m:] = m2b_weight * W[:m,m:]
+    W[m:, :m] = m2b_weight * W[m:, :m]
+    W[:m, m:] = m2b_weight * W[:m, m:]
 
     # Missing values in `D`
     D[np.isnan(D)] = 0.0  # Arbitrary value; those distances are ignored anyway

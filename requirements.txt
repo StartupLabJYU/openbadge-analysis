@@ -2,9 +2,9 @@ cython
 numpy
 scipy
 matplotlib
-pandas===0.20.3
+pandas
 seaborn
-bokeh==0.12.1
+bokeh
 ggplot
 networkx
 crc16

@@ -154,7 +154,7 @@ def participation_plot(df_stitched_all, labels, member=None, member_names=None):
     :return: bokeh plot
     """
     participation_values = percentage_participation(df_stitched_all, labels, member_names=member_names)
-    if isinstance(participation_values, basestring):
+    if isinstance(participation_values, str):
         participation_values = ast.literal_eval(participation_values)
     if participation_values is None:
         print('ERROR: No participation values found')
