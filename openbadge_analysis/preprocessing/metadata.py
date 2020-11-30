@@ -70,8 +70,13 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
     
     df = pd.DataFrame(readfile(fileobject), columns=['timestamp', 'id', 'member'])
     # Convert the timestamp to a datetime, localized in UTC
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-            .dt.tz_localize('UTC').dt.tz_convert(tz)
+    try:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)\
+	    .dt.tz_localize('UTC').dt.tz_convert(tz)
+    except Exception as e:
+	# pandas version is >= 21.x
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+
     del df['timestamp']
 
     # Group by id and resample
@@ -167,8 +172,13 @@ def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=Fal
     df = pd.DataFrame(readfile(fileobject, skip_errors), columns=['timestamp', 'member', 'voltage'])
 
     # Convert the timestamp to a datetime, localized in UTC
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-                       .dt.tz_localize('UTC').dt.tz_convert(tz)
+    try:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
+                           .dt.tz_localize('UTC').dt.tz_convert(tz)
+    except Exception as e:
+	# we probably get an exception because of the pandas version (> 20.x)
+	df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+
     del df['timestamp']
 
     # Group by id and resample
@@ -236,8 +246,13 @@ def sample_counts(fileobject, tz='US/Eastern', keep_type=False, skip_errors=Fals
                                                      'cnt'])
 
     # Convert the timestamp to a datetime, localized in UTC
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-        .dt.tz_localize('UTC').dt.tz_convert(tz)
+    try:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
+            .dt.tz_localize('UTC').dt.tz_convert(tz)
+    except Exception as e:
+	# if pandas is >= 21.x
+	df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+
     del df['timestamp']
 
     if keep_type:

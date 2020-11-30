@@ -101,8 +101,24 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
                     raise
 
     else:
-        raise Exception('Must provide log version')
-
+        #raise Exception('Must provide log version')
+        c = 0
+        batched_sample_data = []
+        for row in raw_data[first_data_row:]:
+            c += 1
+            try:
+                data = json.loads(row)
+                if data['type'] == 'audio received':
+                    batched_sample_data.append(data['data'])
+            except Exception as e:
+                s = traceback.format_exc()
+                if ignore_errors:
+                    print("unexpected failure in line {}, skipping it ({})".format(c, e))
+                    continue
+                else:
+                    print("unexpected failure in line {}, {} ,{}".format(c, e, s))
+		    raise
+    
     return batched_sample_data
 
 
@@ -113,6 +129,7 @@ def load_proximity_chunks_as_json_objects(file_object, log_version=None):
     :param log_version: defines the log_version if file is missing a header line
     :return:
     """
+    print("Entered: load_proximity_chunks_as_json_objects")
     first_data_row = 0 # some file may contain meeting information/header
     meeting_metadata = meeting_log_version_from_file(file_object)
 
@@ -125,7 +142,8 @@ def load_proximity_chunks_as_json_objects(file_object, log_version=None):
     if log_version == '1.0':
         raise Exception('Version 1.0 does not support proximity data')
 
-    elif log_version == '2.0':
+    #elif log_version == '2.0':
+    else: 
         batched_sample_data = []
         for row in raw_data[first_data_row:]:
             try:
@@ -135,8 +153,8 @@ def load_proximity_chunks_as_json_objects(file_object, log_version=None):
             except ValueError:
                 continue
 
-    else:
-        raise Exception('file log version was not set and cannot be identified')
+    #else:
+    #    raise Exception('file log version was not set and cannot be identified')
 
     return batched_sample_data
 
@@ -153,9 +171,12 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
     :param ignore_errors:
     :return:
     """
+    print('sample2data')
     with open(input_file_path,'r') as input_file:
         if log_version is None:
             log_version = meeting_log_version_from_file(input_file)
+        if log_version is None:
+            log_version = '2.0'
         meeting_metadata = metadata_from_file(input_file)
         batched_sample_data = load_audio_chunks_as_json_objects(file_object=input_file, log_version=log_version, ignore_errors=ignore_errors)
 
@@ -170,6 +191,9 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
             sampleDelay = batch.pop('sampleDelay')
         elif log_version == '2.0':
             reference_timestamp = batch.pop('timestamp')*1000 #reference timestamp in milliseconds
+            sampleDelay = batch.pop('sample_period')
+	else: # antti: we do not know what is the log_version but instead try just go around the problem 
+	    reference_timestamp = batch.pop('timestamp')*1000 #reference timestamp in milliseconds
             sampleDelay = batch.pop('sample_period')
         numSamples = len(samples)
         #numSamples = batch.pop('numSamples')
@@ -186,6 +210,122 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
         return None
     df_sample_data['datetime'] = pd.to_datetime(df_sample_data['timestamp'], unit='ms')
     df_sample_data['datetime'] = df_sample_data['datetime'] - np.timedelta64(4, 'h') # note - hard coded EST time conversion
+    del df_sample_data['timestamp']
+
+    df_sample_data.sort_values('datetime')
+
+    if(datetime_index):
+        df_sample_data.set_index(pd.DatetimeIndex(df_sample_data['datetime']),inplace=True)
+        #The timestamps are in UTC. Convert these to EST
+        #df_sample_data.index = df_sample_data.index.tz_localize('utc').tz_convert('US/Eastern')
+        df_sample_data.index.name = 'datetime'
+        del df_sample_data['datetime']
+        if(resample):
+            grouped = df_sample_data.groupby('member')
+            df_resampled = grouped.resample(rule=str(sampleDelay)+"L").mean()
+
+    if(resample):
+        # Optional: Add the meeting metadata to the dataframe
+        df_resampled.metadata = meeting_metadata
+        return df_resampled
+    else:
+        # Optional: Add the meeting metadata to the dataframe
+        df_sample_data.metadata = meeting_metadata
+        return df_sample_data
+
+    
+def load_audio_chunks_as_json_objects_v2(file_object, first_data_row=0, data_limiter=1000, log_version=None, ignore_errors=True):
+    """
+    Name: load_audio_chunks_as_json_objects_v2; version: 2.0. Modified to have limits in fetching data
+    Loads audio chunks as jason objects
+    :param file_object: a file object to read from
+    :param first_data_row: the row in the file object to begin reading from
+    :param data_limiter: how many rows after the first_data_row should the reading of the file object end
+    :param log_version: defines the log_version if file is missing a header line
+    :param ignore_errors: when set to true, skips faulty lines
+    :return:
+    """
+    print('load_audio_chunks_as_json_objects_v2')
+    raw_data = file_object.readlines() # This is a list of strings
+    file_has_lines = len(raw_data) # number of lines in the data
+
+    last_data_row = first_data_row + data_limiter # the last row to read from the list
+    if last_data_row > file_has_lines:
+        last_data_row = file_has_lines # in case the last_data_row would have exceeded the actual number of rows
+    
+    c = 0
+    batched_sample_data = []
+    limited_raw_data = raw_data[first_data_row:last_data_row] # limited range to collect data from
+    for row in limited_raw_data:
+        c = c + 1
+        try:
+            data = json.loads(row)
+            if data['type'] == 'audio received':
+                batched_sample_data.append(data['data'])
+        except Exception as e:
+            s = traceback.format_exc()
+            if ignore_errors:
+                print("unexpected failure in line {}, skipping it ({})".format(c, e))
+                continue
+            else:
+                print("unexpected failure in line {}, {} ,{}".format(c, e, s))
+	        raise
+    
+    return batched_sample_data
+    
+    
+    
+def sample2data_v2(input_file_path, first_data_row=0, data_limiter=1000, datetime_index=True, resample=True, log_version='2.0', ignore_errors=True):
+    """
+    Name: sample2data_v2; version: 2.0; Does things similarly to the original function but now has more control over the size. 
+    Notice: Now adds three hours to the time automatically (in original version took away 4 hours) to get Europe/Helsinki time from utc time.
+    Loads audio data form file and converts it to audio samples.
+    Note that this method is somewhat old and needs to be re-written. In particular, it currently converted timestamps
+    into EST time by deducting 4 hours
+    :param input_file_path:
+    :param first_data_row: row in the file to start reading the json objects 
+    :param data_limiter: how many rows in maximum to read from the file, default 1000
+    :param datetime_index:
+    :param resample:
+    :param log_version: from now on this is always '2.0'
+    :param ignore_errors:
+    :return:
+    """
+    print('sample2data_v2')
+    with open(input_file_path,'r') as input_file:
+        if log_version is None:
+            log_version = meeting_log_version_from_file(input_file)
+        if log_version is None:
+            log_version = '2.0'
+        meeting_metadata = metadata_from_file(input_file) # metadata from file if possible
+        batched_sample_data = load_audio_chunks_as_json_objects_v2(file_object=input_file, first_data_row=first_data_row, data_limiter=data_limiter, log_version=log_version, ignore_errors=ignore_errors)
+
+    sample_data = []
+    
+    for j in range(len(batched_sample_data)):
+        batch = {}
+        batch.update(batched_sample_data[j]) #Create a deep copy of the jth batch of samples
+        samples = batch.pop('samples')
+        # antti: This was the else clause in the original function. We do not know what is the log_version but instead try just go around the problem 
+        reference_timestamp = batch.pop('timestamp')*1000 #reference timestamp in milliseconds
+        sampleDelay = batch.pop('sample_period')
+        numSamples = len(samples)
+        #numSamples = batch.pop('numSamples')
+        for i in range(numSamples):
+            sample = {}
+            sample.update(batch)
+            sample['signal'] = samples[i]
+
+            sample['timestamp'] = reference_timestamp + i*sampleDelay
+            sample_data.append(sample)
+
+    df_sample_data = pd.DataFrame(sample_data)
+    if len(sample_data)==0:
+        return None
+    df_sample_data['datetime'] = pd.to_datetime(df_sample_data['timestamp'], unit='ms')
+    # antti: we do not want to change the timestamp to EST
+    #df_sample_data['datetime'] = df_sample_data['datetime'] - np.timedelta64(4, 'h') # note - hard coded EST time conversion
+    df_sample_data['datetime'] = df_sample_data['datetime'] + np.timedelta64(3,'h') # UTC time to Europe/Helsinki time (i.e., utc + 3 hours)
     del df_sample_data['timestamp']
 
     df_sample_data.sort_values('datetime')
@@ -320,6 +460,7 @@ def mac_address_to_id(mac):
     """Converts a MAC address to an id used by the badges for the proximity pings.
     """
     # convert hex to bytes and reverse
+    macstr = mac.strip() # remove any leading/following white space from the string
     macstr = mac.replace(':', '').decode('hex')[::-1]
     crc = crc16.crc16xmodem(macstr,0xFFFF)
     return crc
