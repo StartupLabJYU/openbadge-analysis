@@ -26,7 +26,7 @@ def meeting_log_version(meeting_metadata):
     """
     log_version = '1.0'
     if 'data' in meeting_metadata and 'log_version' in meeting_metadata['data']:
-            log_version = meeting_metadata['data']['log_version']
+        log_version = meeting_metadata['data']['log_version']
     return log_version
 
 
@@ -43,12 +43,12 @@ def extract_log_version(fileobject):
     """Extracts the metadata from a fileobject, if present."""
     # Check if first line contains metadata
     metadata = json.loads(peek_line(fileobject))
-    
+
     if is_meeting_metadata(metadata):
         # If it does, extract the log version from there
         fileobject.readline()  # Skip first line
         return meeting_log_version(metadata)
-    
+
     else:
         return None
 
@@ -74,7 +74,7 @@ def split_raw_data_by_day(fileobject, target, kind, log_version=None):
     # The days fileobjects
     # It's a mapping from iso dates (e.g. '2017-07-29') to fileobjects
     days = {}
-    
+
     # Extract log version from metadata, if present
     log_version = extract_log_version(fileobject) or log_version
 
@@ -82,7 +82,7 @@ def split_raw_data_by_day(fileobject, target, kind, log_version=None):
         raise Exception('file log version was not set and cannot be identified')
 
     if log_version in ('1.0'):
-        raise Exception('file version '+str(log_version)+'is no longer supported')
+        raise Exception('file version ' + str(log_version) + 'is no longer supported')
 
     # Read each line
     for line in fileobject:
@@ -102,8 +102,7 @@ def split_raw_data_by_day(fileobject, target, kind, log_version=None):
         # Write the data to the corresponding day file
         json.dump(data, days[day])
         days[day].write('\n')
-    
+
     # Free the memory
     for f in days.values():
         f.close()
-

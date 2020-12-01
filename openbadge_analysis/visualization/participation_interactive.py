@@ -1,3 +1,4 @@
+import openbadge_analysis as ob
 import pandas as pd
 import datetime
 import json
@@ -18,7 +19,6 @@ from bokeh.palettes import brewer
 # add the 'src' directory as one where we can import modules
 src_dir = os.path.join(os.getcwd(), os.pardir, '../src')
 sys.path.append(src_dir)
-import openbadge_analysis as ob
 
 
 def stack_bar(participation_values, member, labels, metric, choose):
@@ -94,7 +94,7 @@ def stack_bar(participation_values, member, labels, metric, choose):
             data[date]['date'].append(date)
             data[date]['x'].append(x)
             data[date][metric].append(particip)
-            data[date]['y'].append(bottoms[date] + particip/2)
+            data[date]['y'].append(bottoms[date] + particip / 2)
             data[date]['member'].append(member)
             bottoms[date] += particip
         x += 1
@@ -131,7 +131,7 @@ def stack_bar(participation_values, member, labels, metric, choose):
         )
 
         p = figure(title='Your Percentage of Participation (Based on Number of Speaking Turns)',
-                   plot_width=width, plot_height=height, x_range=[0.5,len(labels)+0.5], y_range=[-7,101],
+                   plot_width=width, plot_height=height, x_range=[0.5, len(labels) + 0.5], y_range=[-7, 101],
                    tools=[hover], toolbar_location='above', sizing_mode='scale_width')
         p.yaxis.axis_label = 'Your Percentage of Participation (Speaking Turns)'
 
@@ -155,10 +155,9 @@ def stack_bar(participation_values, member, labels, metric, choose):
         )
 
         p = figure(title='Your Percentage of Participation (Based on Amount of Speaking Time)',
-                   plot_width=width, plot_height=height, x_range=[0.5,len(labels)+0.5], y_range=[-15,101],
+                   plot_width=width, plot_height=height, x_range=[0.5, len(labels) + 0.5], y_range=[-15, 101],
                    tools=[hover], toolbar_location='above', sizing_mode='scale_width')
         p.yaxis.axis_label = 'Your Percentage of Participation (Speaking Time)'
-
 
     legends = []
     rects = []
@@ -188,15 +187,14 @@ def stack_bar(participation_values, member, labels, metric, choose):
 
     label_font_style = 'normal'  # 'italic', 'bold'
     p.xaxis.axis_label = 'Date'
-    p.xaxis.axis_label_text_font_size = str(height/50) + 'pt'
+    p.xaxis.axis_label_text_font_size = str(height / 50) + 'pt'
     p.xaxis.major_label_text_font_size = '0pt'
     p.xaxis.axis_label_text_font_style = label_font_style
-    p.xaxis.ticker=FixedTicker(ticks=[0])
+    p.xaxis.ticker = FixedTicker(ticks=[0])
 
-    p.yaxis.major_label_text_font_size = str(height/50) + 'pt'
-    p.yaxis.axis_label_text_font_size = str(height/50) + 'pt'
+    p.yaxis.major_label_text_font_size = str(height / 50) + 'pt'
+    p.yaxis.axis_label_text_font_size = str(height / 50) + 'pt'
     p.yaxis.axis_label_text_font_style = label_font_style
-
 
     legend = Legend(legends=legends, location=(0, -30))
 
@@ -205,7 +203,7 @@ def stack_bar(participation_values, member, labels, metric, choose):
     if choose:
         date_pickers = []
         for i in range(len(labels) - 2):
-            source_i = ColumnDataSource(data={'i':[i]})
+            source_i = ColumnDataSource(data={'i': [i]})
             if metric == 'turns':
                 cb = CustomJS(args={'source_p_values': source_p_values,
                                     'source_colors': source_colors, 'source_labels': source_labels,
@@ -313,7 +311,7 @@ def stack_bar(participation_values, member, labels, metric, choose):
                     r_source_avg.trigger('change');
                     txt_source.trigger('change');
                     """
-                             )
+                              )
             elif metric == 'speak':
                 cb = CustomJS(args={'source_p_values': source_p_values,
                                     'source_colors': source_colors, 'source_labels': source_labels,
@@ -425,11 +423,11 @@ def stack_bar(participation_values, member, labels, metric, choose):
 
             m = int(labels[i].split('/')[0])
             d = int(labels[i].split('/')[1])
-            date_pickers.append(DatePicker(title='Day ' + str(i+1), min_date=datetime.datetime(2016,6,1),
-                                max_date=datetime.datetime.now(),
-                                value=datetime.datetime(datetime.datetime.now().year,m,d),
-                                callback=cb,
-                                width=width/5, height=200)
+            date_pickers.append(DatePicker(title='Day ' + str(i + 1), min_date=datetime.datetime(2016, 6, 1),
+                                           max_date=datetime.datetime.now(),
+                                           value=datetime.datetime(datetime.datetime.now().year, m, d),
+                                           callback=cb,
+                                           width=width / 5, height=200)
                                 )
         return column(children=[p, row(children=date_pickers)], sizing_mode='scale_width')
 

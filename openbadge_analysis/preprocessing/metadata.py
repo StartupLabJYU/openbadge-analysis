@@ -3,6 +3,7 @@ import json
 import io
 from ..core import mac_address_to_id
 
+
 def _id_to_member_mapping_fill_gaps(idmap, time_bins_size='1min'):
     """ Fill gaps in a idmap
     Parameters
@@ -20,7 +21,7 @@ def _id_to_member_mapping_fill_gaps(idmap, time_bins_size='1min'):
     df = idmap.to_frame().reset_index()
     df.set_index('datetime', inplace=True)
     s = df.groupby(['id'])['member'].resample(time_bins_size).fillna(method='ffill')
-    s = s.reorder_levels((1,0)).sort_index()
+    s = s.reorder_levels((1, 0)).sort_index()
     return s
 
 
@@ -29,15 +30,15 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
     Depending on the version of the logfile (and it's content), it will either use the member_id
     field to generate the mapping (newer version), or calculate an ID form the MAC address (this
     was the default behavior of the older version of the hubs and badges)
-    
+
     Parameters
     ----------
     fileobject : file or iterable list of str
         The proximity data, as an iterable of JSON strings.
-    
+
     time_bins_size : str
         The size of the time bins used for resampling.  Defaults to '1min'.
-    
+
     tz : str
         The time zone used for localization of dates.  Defaults to 'US/Eastern'.
 
@@ -50,7 +51,7 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
     pd.Series :
         A mapping from badge id to member, indexed by datetime and id.
     """
-    
+
     def readfile(fileobject):
         no_id_warning = False
         for line in fileobject:
@@ -67,11 +68,11 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
             yield (data['timestamp'],
                    member_id,
                    str(data['member']))
-    
+
     df = pd.DataFrame(readfile(fileobject), columns=['timestamp', 'id', 'member'])
     # Convert the timestamp to a datetime, localized in UTC
     df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-            .dt.tz_localize('UTC').dt.tz_convert(tz)
+        .dt.tz_localize('UTC').dt.tz_convert(tz)
     del df['timestamp']
 
     # Group by id and resample
@@ -104,17 +105,17 @@ def id_to_member_mapping(mapper, time_bins_size='1min', tz='US/Eastern', fill_ga
     ----------
     fileobject : file object
         A file to read to determine the mapping.
-    
+
     members_metadata : pd.DataFrame
         Metadata dataframe, as downloaded from the server, to map IDs to keys.
-        
+
     Returns
     -------
     pd.Series : 
         The ID to member key mapping.
-    
+
     """
-    if isinstance(mapper, io.BufferedIOBase) | isinstance(mapper, file):
+    if isinstance(mapper, io.BufferedIOBase) or isinstance(mapper, file):
         idmap = legacy_id_to_member_mapping(mapper, time_bins_size=time_bins_size, tz=tz, fill_gaps=fill_gaps)
         return idmap
     elif isinstance(mapper, pd.DataFrame):
@@ -126,15 +127,15 @@ def id_to_member_mapping(mapper, time_bins_size='1min', tz='US/Eastern', fill_ga
 
 def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=False):
     """Creates a DataFrame of voltages, for each member and time bin.
-    
+
     Parameters
     ----------
     fileobject : file or iterable list of str
         The proximity data, as an iterable of JSON strings.
-    
+
     time_bins_size : str
         The size of the time bins used for resampling.  Defaults to '1min'.
-    
+
     tz : str
         The time zone used for localization of dates.  Defaults to 'US/Eastern'.
 
@@ -146,7 +147,7 @@ def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=Fal
     pd.Series :
         Voltages, indexed by datetime and member.
     """
-    
+
     def readfile(fileobject, skip_errors):
         i = 0
         for line in fileobject:
@@ -176,9 +177,9 @@ def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=Fal
         pd.TimeGrouper(time_bins_size, key='datetime'),
         'member'
     ]).mean()
-    
+
     df.sort_index(inplace=True)
-    
+
     return df['voltage']
 
 
@@ -232,8 +233,8 @@ def sample_counts(fileobject, tz='US/Eastern', keep_type=False, skip_errors=Fals
                 else:
                     raise e
 
-    df = pd.DataFrame(readfile(fileobject, skip_errors), columns=['timestamp' ,'type', 'member',
-                                                     'cnt'])
+    df = pd.DataFrame(readfile(fileobject, skip_errors), columns=['timestamp', 'type', 'member',
+                                                                  'cnt'])
 
     # Convert the timestamp to a datetime, localized in UTC
     df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
@@ -241,7 +242,7 @@ def sample_counts(fileobject, tz='US/Eastern', keep_type=False, skip_errors=Fals
     del df['timestamp']
 
     if keep_type:
-        df.set_index(['datetime','type','member'],inplace=True)
+        df.set_index(['datetime', 'type', 'member'], inplace=True)
     else:
         del df['type']
         df.set_index(['datetime', 'member'], inplace=True)

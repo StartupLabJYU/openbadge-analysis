@@ -11,6 +11,7 @@ from bokeh.models.tools import HoverTool, BoxZoomTool, ResetTool, PanTool, Resiz
 from bokeh.models.widgets import Panel, Tabs
 from bokeh.io import output_file, show
 
+
 def stack_bar(data_dict):
     """
     Creates a stacked bar graph showing percentages of participation for each member for each day/week (hover doesn't work)
@@ -179,8 +180,8 @@ def participation_plot(df_stitched_all, labels, member=None, member_names=None):
                     data_dict['turns'] += [0]
                     data_dict['speak'] += [0]
             else:
-                    data_dict['turns'] += [participation_values[member]['Average']['turns']]
-                    data_dict['speak'] += [participation_values[member]['Average']['speak']]
+                data_dict['turns'] += [participation_values[member]['Average']['turns']]
+                data_dict['speak'] += [participation_values[member]['Average']['speak']]
     if member:
         # Add 'You' first so that 'You' is on bottom of bar chart
         add_member(member)

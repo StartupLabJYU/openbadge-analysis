@@ -64,7 +64,7 @@ def _smacof_single(dissimilarities, weights, init=None, anchors=None, n_componen
 
     # Initial positions are random by default
     if init is None:
-        init = random_state.randn(dissimilarities.shape[0]-anchors.shape[0], n_components)
+        init = random_state.randn(dissimilarities.shape[0] - anchors.shape[0], n_components)
     X = init
 
     Sprev = _stress(dissimilarities, weights, np.vstack([X, anchors]))  # Stress at previous iteration

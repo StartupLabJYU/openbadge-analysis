@@ -9,17 +9,17 @@ import networkx as nx
 
 def extract_groups(m2m):
     """Extracts a list of groups from a social network varying through time.
-    
+
     Groups are defined as connected components of the social graph at a given
     time bin.
-    
+
     Parameters
     ----------
     m2m : pd.DataFrame
         The social network, for instance, member-to-member bluetooth proximity
         data.  It must have the following columns: 'datetime', 'member1', and
         'member2'.
-    
+
     Returns
     -------
     pd.DataFrame :
@@ -30,14 +30,14 @@ def extract_groups(m2m):
         pd.Series([frozenset(c) for c in nx.connected_components(nx.from_pandas_dataframe(df.reset_index(), 'member1', 'member2'))])
     )
     groups.name = 'members'
-    
+
     return groups.reset_index()[['datetime', 'members']]
 
 
 def _set_similarity(s, t):
     """Computes the similarity between two sets, namely, the ratio of intersection
     size to union size."""
-    return float(len(s.intersection(t)))/len(s.union(t))
+    return float(len(s.intersection(t))) / len(s.union(t))
 
 
 def _group_distance(g, h, gamma):
@@ -45,38 +45,38 @@ def _group_distance(g, h, gamma):
 
     This metric depends on the set similarity of the two groups, and the number of
     time bins between the two groups.
-    
+
     Parameters
     ----------
     g : tuple
     h : tuple
         Groups, where the first element is a datetime, and the second is a set.
-    
+
     gamma : float
         Exponential decay, for time differences between groups.
     """
-    dt = np.abs(g[0] - h[0]).total_seconds()/60
+    dt = np.abs(g[0] - h[0]).total_seconds() / 60
     return 1. - _set_similarity(g[1], h[1]) * np.exp(-gamma * (dt - 1.))
 
 
 def gather_groups(groups, distance_threshold=.49, gamma=.08):
     """Gather groups into gatherings.
-    
+
     A gathering is defined as series of groups with similar members, existing
     within a somewhat continuous timeframe.
-    
+
     Parameters
     ----------
     groups : pd.DataFrame
         A list of groups, as returned by `extract_groups`.
-    
+
     distance_threshold : float
         The minimum distance between two groups for them to be joined into a
         single gathering.  Default (recommended) value is 0.49.
-    
+
     gamma : float
         The `gamma` parameter of the group distance.
-    
+
     Returns
     -------
     list(pd.DataFrame) :
@@ -98,8 +98,8 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
     # the matrix of distances between groups
     dist = np.zeros((n, n))
     for i in range(n):
-        for j in range(i+1, n):
-            dist[i, j] = _group_distance(ga[i,:], ga[j,:], gamma=gamma)
+        for j in range(i + 1, n):
+            dist[i, j] = _group_distance(ga[i, :], ga[j, :], gamma=gamma)
     dist += dist.T
 
     # We set the invariant on `dist` that two groups in the same gathering have a
@@ -119,7 +119,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
         i, j = np.unravel_index(dist.argmin(), dist.shape)
 
         # If the minimum distance is above the threshold, stop the algorithm
-        if dist[i,j] > distance_threshold:
+        if dist[i, j] > distance_threshold:
             break
 
         # Index of the first gathering
@@ -138,7 +138,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
 
         # The new distance vector of elements of this new gathering is set as
         # the minimum of the vectors of the two original gatherings
-        newdist = np.minimum(dist[i,:], dist[j,:])
+        newdist = np.minimum(dist[i, :], dist[j, :])
 
         # Set the within-gathering distance to 1.0 (enforce the invariant)
         for g in gth2grp[gth0]:
@@ -146,8 +146,8 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
 
         # Update the distance of each element of the new gathering
         for g in gth2grp[gth0]:
-            dist[g,:] = newdist  # Column
-            dist[:,g] = newdist  # Row
+            dist[g, :] = newdist  # Column
+            dist[:, g] = newdist  # Row
 
     # Store each gathering in a DataFrame
     gatherings = [groups.iloc[gs].copy().set_index('datetime').sort_index()['members']
@@ -163,8 +163,8 @@ def _participation_threshold(n):
     a vector of `n` uniformly distributed random variables, taking values between
     0 and 1.  This is equivalent to a beta distribution with parameters 1 and `n`.
     """
-    mean = 1./(n + 1)
-    std = np.sqrt(1.*n/(n+1)**2/(n+2))
+    mean = 1.0 / (n + 1)
+    std = np.sqrt(1.0 * n / (n + 1) ** 2 / (n + 2))
 
     return mean + std
 
@@ -184,7 +184,7 @@ def _extract_core(gathering):
 
     # Sum the participations and normalize, to get the percentage of participation
     # for each member
-    participations = (df.sum()/len(df.index)).sort_values(ascending=False)
+    participations = (df.sum() / len(df.index)).sort_values(ascending=False)
 
     # Compute the participation gap threshold
     threshold = _participation_threshold(len(df.columns))
@@ -199,12 +199,12 @@ def _extract_core(gathering):
 
 def extract_cores(gatherings):
     """Extract the core from each gathering.
-    
+
     Parameters
     ----------
     gatherings : list(pd.DataFrame)
         The gatherings, as returned by `gather_groups`.
-    
+
     Returns
     -------
     pd.DataFrame :
@@ -224,4 +224,3 @@ def extract_cores(gatherings):
     cores = pd.DataFrame(cores, columns=['start', 'end', 'members'])
 
     return cores
-

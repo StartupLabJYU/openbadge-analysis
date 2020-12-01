@@ -2,7 +2,7 @@ import pandas as pd
 import re
 import ast
 
-log_pattern = re.compile("^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ - \w+ - .*$")
+log_pattern = re.compile(r'^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d+ - \w+ - .*$')
 
 
 def _is_legal_log_line(line):
@@ -36,7 +36,6 @@ def _hublog_read_scan_line(line):
     if not _is_legal_log_line(line):
         return None
 
-
     # parse
     data = line.split(" - ")[2]
 
@@ -48,20 +47,20 @@ def _hublog_read_scan_line(line):
     adv_payload = ast.literal_eval(adv_payload_raw)
 
     if not adv_payload:
-        adv_payload = {'proximity_status': None, \
-                       'sync_status': None, \
-                       'audio_status': None, \
-                       'mac': None, \
-                       'badge_id': None, \
-                       'voltage': None, \
-                       'status_flags': None, \
+        adv_payload = {'proximity_status': None,
+                       'sync_status': None,
+                       'audio_status': None,
+                       'mac': None,
+                       'badge_id': None,
+                       'voltage': None,
+                       'status_flags': None,
                        'project_id': None}
 
     scan_data.update(adv_payload)
     scan_data['mac'] = data.split(" ")[1][0:-1]
     scan_data['rssi'] = data.split(": ")[2].split(",")[0]
     scan_data['datetime'] = line.split(" - ")[0]
-    scan_data['adv_payload'] = re.sub('[ :\'\[]', '', adv_payload_raw)  # shortenning it
+    scan_data['adv_payload'] = re.sub(r'[ :\'\[]', '', adv_payload_raw)  # shortenning it
     return scan_data
 
 
@@ -87,7 +86,6 @@ def hublog_scans(fileobject, log_tz, tz='US/Eastern'):
 
     def readfile(fileobject):
         for line in fileobject:
-            line_num = line_num + 1
             data = _hublog_read_scan_line(line)
             if data:
                 yield (data['datetime'],
@@ -103,8 +101,8 @@ def hublog_scans(fileobject, log_tz, tz='US/Eastern'):
             else:
                 continue  # skip unneeded lines
 
-    df = pd.DataFrame(readfile(fileobject), columns=['datetime', 'mac', 'rssi', 'voltage', 'badge_id', \
-                                                     'project_id', 'sync_status', 'audio_status', \
+    df = pd.DataFrame(readfile(fileobject), columns=['datetime', 'mac', 'rssi', 'voltage', 'badge_id',
+                                                     'project_id', 'sync_status', 'audio_status',
                                                      'proximity_status'])
 
     # Localized record date
@@ -214,7 +212,7 @@ def _hublog_read_clock_sync_line(line):
         return None
 
     # Parse data
-    data = re.match('(.*) - INFO - \[(.*)\] Badge datetime was: ([\d,]*)', line).group(1, 2, 3)
+    data = re.match(r'(.*) - INFO - \[(.*)\] Badge datetime was: ([\d,]*)', line).group(1, 2, 3)
 
     d = {}
     d['datetime'] = data[0]

@@ -2,26 +2,28 @@ import pandas as pd
 import json
 import collections
 
+
+# TODO: Teemu: korjaa fileobject
 def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'):
     """Creates a member-to-badge proximity DataFrame from a proximity data file.
-    
+
     Parameters
     ----------
     fileobject : file or iterable list of str
         The proximity data, as an iterable of JSON strings.
-    
+
     time_bins_size : str
         The size of the time bins used for resampling.  Defaults to '1min'.
-    
+
     tz : str
         The time zone used for localization of dates.  Defaults to 'US/Eastern'.
-    
+
     Returns
     -------
     pd.DataFrame :
         The member-to-badge proximity data.
     """
-    
+
     def readfile(fileobject):
         for line in fileobject:
             data = json.loads(line)['data']
@@ -36,13 +38,13 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
                 )
 
     df = pd.DataFrame(
-            readfile(fileobject),
-            columns=('timestamp', 'member', 'observed_id', 'rssi', 'count')
+        readfile(fileobject),
+        columns=('timestamp', 'member', 'observed_id', 'rssi', 'count')
     )
 
     # Convert timestamp to datetime for convenience, and localize to UTC
     df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-            .dt.tz_localize('UTC').dt.tz_convert(tz)
+        .dt.tz_localize('UTC').dt.tz_convert(tz)
     del df['timestamp']
 
     # Group per time bins, member and observed_id,
@@ -78,15 +80,15 @@ def member_to_member_proximity(m2badge, id2m):
     """
 
     df = m2badge.copy().reset_index()
-    
+
     # Join the member names using their badge ids
     # If id2m index is a MultiIndex, assume it is a time series and use legacy method
     if type(id2m.index) == pd.MultiIndex:
         df = df.join(id2m, on=['datetime', 'observed_id'], lsuffix='1', rsuffix='2')
-    # Otherwise, assume it is not time-based, and join without datetime
+        # Otherwise, assume it is not time-based, and join without datetime
     else:
         df = df.join(id2m, on=['observed_id'], lsuffix='1', rsuffix='2')
-    
+
     # Filter out the beacons (i.e. those ids that did not have a mapping)
     df.dropna(axis=0, subset=['member2'], inplace=True)
 
@@ -94,7 +96,7 @@ def member_to_member_proximity(m2badge, id2m):
     # This is done because pandas likes to convert ints to floats when there are
     # missing values
     df['member2'] = df['member2'].astype(id2m.dtype)
-        
+
     # Set the index and sort it
     df.set_index(['datetime', 'member1', 'member2'], inplace=True)
     df.sort_index(inplace=True)
@@ -131,51 +133,51 @@ def member_to_member_proximity(m2badge, id2m):
 
 def _member_to_beacon_proximity(m2badge, beacons):
     """Creates a member-to-beacon proximity DataFrame from member-to-badge proximity data.
-    
+
     Parameters
     ----------
     m2badge : pd.DataFrame
         The member-to-badge proximity data, as returned by `member_to_badge_proximity`.
-    
+
     beacons : list of str
         A list of beacon ids.
-    
+
     Returns
     -------
     pd.DataFrame :
         The member-to-member proximity data.
     """
-    
+
     df = m2badge.copy()
-    
+
     # Rename 'observed_id' to 'beacon'
     df = df.rename_axis(['datetime', 'member', 'beacon'])
-    
+
     # Filter out ids that are not in `beacons`
-    return df.loc[pd.IndexSlice[:, :, beacons],:]
+    return df.loc[pd.IndexSlice[:, :, beacons], :]
 
 
 def member_to_beacon_proximity(m2badge, id2b):
     """Creates a member-to-beacon proximity DataFrame from member-to-badge proximity data.
-    
+
     Parameters
     ----------
     m2badge : pd.DataFrame
         The member-to-badge proximity data, as returned by `member_to_badge_proximity`.
-    
+
     id2b : pd.Series
         A mapping from badge ID to beacon name.  Index must be ID, and series name must be 'beacon'.
-    
+
     Returns
     -------
     pd.DataFrame :
         The member-to-member proximity data.
     """
-    
+
     df = m2badge.copy().reset_index()
 
     # Join the beacon names using their badge ids
-    df = df.join(id2b, on='observed_id') 
+    df = df.join(id2b, on='observed_id')
 
     # Filter out the members (i.e. those ids that did not have a mapping)
     df.dropna(axis=0, subset=['beacon'], inplace=True)
@@ -195,8 +197,8 @@ def member_to_beacon_proximity(m2badge, id2b):
     return df[['rssi']]
 
 
-def member_to_beacon_proximity_smooth(m2b, window_size = '5min',
-                                      min_samples = 1):
+def member_to_beacon_proximity_smooth(m2b, window_size='5min',
+                                      min_samples=1):
     """ Smooths the given object using 1-D median filter
     Parameters
     ----------
@@ -225,24 +227,22 @@ def member_to_beacon_proximity_smooth(m2b, window_size = '5min',
     # when there was only one record. If there were no records (
     # median was not calculated because of min_samples), the record
     # will be dropped because of the NaN in 'rssi'
-    df2['rssi_std']\
-        = df.groupby(['member', 'beacon'])[['rssi']] \
+    df2['rssi_std'] = df.groupby(['member', 'beacon'])[['rssi']] \
         .rolling(window=window_size, min_periods=min_samples) \
         .std().fillna(-1)
 
     # number of records used for calculating the median
-    df2['rssi_smooth_window_count']\
-        = df.groupby(['member', 'beacon'])[['rssi']] \
+    df2['rssi_smooth_window_count'] = df.groupby(['member', 'beacon'])[['rssi']] \
         .rolling(window=window_size, min_periods=min_samples) \
         .count()
 
-    df2 = df2.reorder_levels(['datetime', 'member', 'beacon'], axis=0)\
+    df2 = df2.reorder_levels(['datetime', 'member', 'beacon'], axis=0) \
         .dropna().sort_index()
     return df2
 
 
 def member_to_beacon_proximity_fill_gaps(m2b, time_bins_size='1min',
-                                        max_gap_size = 2):
+                                         max_gap_size=2):
     """ Fill gaps in a given member to beacon object
     Parameters
     ----------
@@ -264,13 +264,10 @@ def member_to_beacon_proximity_fill_gaps(m2b, time_bins_size='1min',
     df = df.sort_values(by=['member', 'beacon', 'datetime'])
     df.set_index('datetime', inplace=True)
 
-    df = df.groupby(['member', 'beacon']) \
-        [['rssi', 'rssi_std','rssi_smooth_window_count']] \
+    df = df.groupby(['member', 'beacon'])[['rssi', 'rssi_std', 'rssi_smooth_window_count']] \
         .resample(time_bins_size) \
         .fillna(method='ffill', limit=max_gap_size)
 
     df = df.reorder_levels(['datetime', 'member', 'beacon'], axis=0)\
         .dropna().sort_index()
     return df
-
-

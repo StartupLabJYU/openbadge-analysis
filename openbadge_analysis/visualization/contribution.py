@@ -12,7 +12,7 @@ def unix_time_ms(dt):
     :return: timestamp float (ms)
     """
     epoch = datetime.datetime.utcfromtimestamp(0)
-    return (dt - epoch).total_seconds()*1000
+    return (dt - epoch).total_seconds() * 1000
 
 
 def contribution_plot(df_stitched, meeting_name, rolling=True, member_names=None):
@@ -29,7 +29,7 @@ def contribution_plot(df_stitched, meeting_name, rolling=True, member_names=None
     """
     def area_chart(df, interval, rolling):
         # re-sampling
-        df = df_stitched.resample(str(interval)+'S').sum().fillna(0)/(1000/50)*(60/interval)  # Each sample is 50ms
+        df = df_stitched.resample(str(interval) + 'S').sum().fillna(0) / (1000 / 50) * (60 / interval)  # Each sample is 50ms
         # Gives number of seconds spoken per min
 
         # rename columns if names were given
@@ -41,26 +41,26 @@ def contribution_plot(df_stitched, meeting_name, rolling=True, member_names=None
             df = df.rolling(min_periods=1, window=5, center=True).mean()  # To smooth graph
 
         start = unix_time_ms(df.index[0])
-        start_datetime = datetime.datetime.utcfromtimestamp(start/1000)
-        end = unix_time_ms(df.index[len(df.index)-1])
-        end_datetime = datetime.datetime.utcfromtimestamp(end/1000)
-        
+        start_datetime = datetime.datetime.utcfromtimestamp(start / 1000)
+        end = unix_time_ms(df.index[len(df.index) - 1])
+        end_datetime = datetime.datetime.utcfromtimestamp(end / 1000)
+
         df.reset_index(level='datetime', inplace=True)  # To input x values into area chart
 
         if rolling:
             graph_title = 'Contribution per Minute per Member for Meeting ' + meeting_name + ' (with rolling mean) \
-            from ' + start_datetime.strftime('%I:%M %p')+' to '+end_datetime.strftime('%I:%M %p')
+            from ' + start_datetime.strftime('%I:%M %p') + ' to ' + end_datetime.strftime('%I:%M %p')
         else:
             graph_title = 'Contribution per Minute per Member for Meeting ' + meeting_name + ' (without rolling mean) \
-            from ' + start_datetime.strftime('%I:%M %p')+' to '+end_datetime.strftime('%I:%M %p')
-        
-        area = Area(        
+            from ' + start_datetime.strftime('%I:%M %p') + ' to ' + end_datetime.strftime('%I:%M %p')
+
+        area = Area(
             df,
             x='datetime',  # Column name
             title=graph_title, legend='top_left',
             stack=True, xlabel='Time of Day', ylabel='Number of Seconds',
             xscale='datetime',
-            width=1700, height=400,          
+            width=1700, height=400,
             tools='xpan, xwheel_zoom, box_zoom, reset, resize',
         )
 
@@ -69,21 +69,21 @@ def contribution_plot(df_stitched, meeting_name, rolling=True, member_names=None
         area.below[0].formatter.formats = dict(years=['%Y'], months=['%b %Y'], days=['%d %b %Y'],
                                                hours=['%I:%M %P'], hourmin=['%I:%M %P'],
                                                minutes=['%I:%M %P'], minsec=['%I:%M:%S %P'],
-                                               seconds=['%I:%M:%S %P']) 
-        
+                                               seconds=['%I:%M:%S %P'])
+
         return area
-    
+
     area5 = area_chart(df_stitched, 5, rolling)
     tab5 = Panel(child=area5, title='5 Second Intervals')
-    
+
     area10 = area_chart(df_stitched, 10, rolling)
     tab10 = Panel(child=area10, title='10 Second Intervals')
-    
+
     area30 = area_chart(df_stitched, 30, rolling)
     tab30 = Panel(child=area30, title='30 Second Intervals')
-    
+
     area60 = area_chart(df_stitched, 60, rolling)
     tab60 = Panel(child=area60, title='60 Second Intervals')
-    
+
     plots = Tabs(tabs=[tab60, tab30, tab10, tab5])
     return plots
