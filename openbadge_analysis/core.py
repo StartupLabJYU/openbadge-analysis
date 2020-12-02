@@ -117,7 +117,7 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
                     continue
                 else:
                     print("unexpected failure in line {}, {} ,{}".format(c, e, s))
-		    raise
+                    
     
     return batched_sample_data
 
@@ -502,8 +502,7 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
         'datetime', 'member', 'badge_address', 'id'
     ))
 
-    fulldf['datetime'] = pd.to_datetime(fulldf['datetime'], unit='s', utc=True) \
-                       .dt.tz_localize('UTC').dt.tz_convert(tz)
+    fulldf['datetime'] = pd.to_datetime(fulldf['datetime'], unit='s', utc=True).dt.tz_convert(tz)
     
     # Load chunks
     # A chunk contains a set of observations by a given badge at a given timestamp
