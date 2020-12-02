@@ -21,8 +21,10 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
     pd.DataFrame :
         The member-to-badge proximity data.
     """
-    
+    print("Entered: member_to_badge_proximity")
+
     def readfile(fileobject):
+	print("Entered: member_to_badge_proximity/readfile")
         for line in fileobject:
             data = json.loads(line)['data']
 
@@ -40,9 +42,14 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
             columns=('timestamp', 'member', 'observed_id', 'rssi', 'count')
     )
 
-    # Convert timestamp to datetime for convenience, and localize to UTC
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-            .dt.tz_localize('UTC').dt.tz_convert(tz)
+    # Convert the timestamp to a datetime, localized in UTC
+    try:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)\
+	    .dt.tz_localize('UTC').dt.tz_convert(tz)
+    except Exception as e:
+	# pandas version is >= 21.x
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
+
     del df['timestamp']
 
     # Group per time bins, member and observed_id,
@@ -76,12 +83,14 @@ def member_to_member_proximity(m2badge, id2m):
     pd.DataFrame :
         The member-to-member proximity data.
     """
-
+    print("member_to_member_proximity")
     df = m2badge.copy().reset_index()
     
     # Join the member names using their badge ids
     # If id2m index is a MultiIndex, assume it is a time series and use legacy method
     if type(id2m.index) == pd.MultiIndex:
+	print("id2m is MultiIndex thus using legacy")
+	print("\nm2badge.columns.values == {}".format(m2badge.columns.values))
         df = df.join(id2m, on=['datetime', 'observed_id'], lsuffix='1', rsuffix='2')
     # Otherwise, assume it is not time-based, and join without datetime
     else:
@@ -105,6 +114,7 @@ def member_to_member_proximity(m2badge, id2m):
     # If the dataframe is empty after the join, we can (and should) stop
     # here
     if len(df) == 0:
+	print("Dataframe is empty!")
         return df
 
     # Reorder the index such that 'member1' is always lexicographically smaller than 'member2'
