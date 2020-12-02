@@ -111,14 +111,14 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
                 if data['type'] == 'audio received':
                     batched_sample_data.append(data['data'])
             except Exception as e:
-                s = traceback.format_exc()
                 if ignore_errors:
+                    s = traceback.format_exc()
                     print("unexpected failure in line {}, skipping it ({})".format(c, e))
                     continue
                 else:
                     print("unexpected failure in line {}, {} ,{}".format(c, e, s))
-		    raise
-    
+                    raise e
+
     return batched_sample_data
 
 
