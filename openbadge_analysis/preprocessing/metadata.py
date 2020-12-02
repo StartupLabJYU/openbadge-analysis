@@ -52,17 +52,14 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
     """
     
     def readfile(fileobject):
-        no_id_warning = False
         for line in fileobject:
             data = json.loads(line)['data']
             member_id = None
             if 'member_id' in data:
                 member_id = data['member_id']
             else:
+                print("Warning - no id provided in data. Calculating id from MAC address")
                 member_id = mac_address_to_id(data['badge_address'])
-                if not no_id_warning:
-                    print("Warning - no id provided in data. Calculating id from MAC address")
-                no_id_warning = True
 
             yield (data['timestamp'],
                    member_id,
