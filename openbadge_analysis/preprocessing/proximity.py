@@ -22,9 +22,8 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
         The member-to-badge proximity data.
     """
     print("Entered: member_to_badge_proximity")
-
     def readfile(fileobject):
-	print("Entered: member_to_badge_proximity/readfile")
+        print("Entered: member_to_badge_proximity/readfile")
         for line in fileobject:
             data = json.loads(line)['data']
 
@@ -45,9 +44,9 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
     # Convert the timestamp to a datetime, localized in UTC
     try:
         df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)\
-	    .dt.tz_localize('UTC').dt.tz_convert(tz)
+        .dt.tz_localize('UTC').dt.tz_convert(tz)
     except Exception as e:
-	# pandas version is >= 21.x
+    # pandas version is >= 21.x
         df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True)
 
     del df['timestamp']
@@ -89,10 +88,10 @@ def member_to_member_proximity(m2badge, id2m):
     # Join the member names using their badge ids
     # If id2m index is a MultiIndex, assume it is a time series and use legacy method
     if type(id2m.index) == pd.MultiIndex:
-	print("id2m is MultiIndex thus using legacy")
-	print("\nm2badge.columns.values == {}".format(m2badge.columns.values))
+        print("id2m is MultiIndex thus using legacy")
+        print("\nm2badge.columns.values == {}".format(m2badge.columns.values))
         df = df.join(id2m, on=['datetime', 'observed_id'], lsuffix='1', rsuffix='2')
-    # Otherwise, assume it is not time-based, and join without datetime
+        # Otherwise, assume it is not time-based, and join without datetime
     else:
         df = df.join(id2m, on=['observed_id'], lsuffix='1', rsuffix='2')
     
@@ -114,7 +113,7 @@ def member_to_member_proximity(m2badge, id2m):
     # If the dataframe is empty after the join, we can (and should) stop
     # here
     if len(df) == 0:
-	print("Dataframe is empty!")
+        print("Dataframe is empty!")
         return df
 
     # Reorder the index such that 'member1' is always lexicographically smaller than 'member2'
@@ -206,7 +205,7 @@ def member_to_beacon_proximity(m2badge, id2b):
 
 
 def member_to_beacon_proximity_smooth(m2b, window_size = '5min',
-                                      min_samples = 1):
+                                    min_samples = 1):
     """ Smooths the given object using 1-D median filter
     Parameters
     ----------
@@ -262,7 +261,7 @@ def member_to_beacon_proximity_fill_gaps(m2b, time_bins_size='1min',
         The size of the time bins used for resampling.  Defaults to '1min'.
 
     max_gap_size : int
-         this is the maximum number of consecutive NaN values to forward/backward fill
+        this is the maximum number of consecutive NaN values to forward/backward fill
 
     Returns
     -------
