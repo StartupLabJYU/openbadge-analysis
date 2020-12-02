@@ -178,7 +178,7 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
             sample.update(batch)
             sample['signal'] = samples[i]
 
-            sample['timestamp'] = reference_timestamp + i*sampleDelay
+            sample['timestamp'] = reference_timestamp + i * sampleDelay
             sample_data.append(sample)
 
     df_sample_data = pd.DataFrame(sample_data)
@@ -242,7 +242,7 @@ def fill_boolean_segments(x_series, min_length, value):
     i = 0
     length = 0
     start = 0
-    while(i < total_samples):
+    while i < total_samples:
         current_value = x_series[i]
         if(i == 0):
             previous_value = current_value
@@ -255,7 +255,7 @@ def fill_boolean_segments(x_series, min_length, value):
             start = i
         else:
             length += 1
-        i = i+1
+        i = i + 1
         previous_value = current_value
 
 
@@ -388,8 +388,7 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
         del data
 
         # Convert the timestamp to a datetime, localized in UTC
-        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-            .dt.tz_localize('UTC').dt.tz_convert(tz)
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(tz)
         del df['timestamp']
 
         fulldf = fulldf.append(df)

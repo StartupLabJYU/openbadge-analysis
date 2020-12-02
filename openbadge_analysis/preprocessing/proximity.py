@@ -2,9 +2,7 @@ import pandas as pd
 import json
 import collections
 
-
-# TODO: Teemu: korjaa fileobject
-def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'):
+def member_to_badge_proximity(fileobject, time_bins_size='1min', tz="US/Eastern"):
     """Creates a member-to-badge proximity DataFrame from a proximity data file.
 
     Parameters
@@ -42,9 +40,7 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz='US/Eastern'
         columns=('timestamp', 'member', 'observed_id', 'rssi', 'count')
     )
 
-    # Convert timestamp to datetime for convenience, and localize to UTC
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True) \
-        .dt.tz_localize('UTC').dt.tz_convert(tz)
+    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(tz)
     del df['timestamp']
 
     # Group per time bins, member and observed_id,

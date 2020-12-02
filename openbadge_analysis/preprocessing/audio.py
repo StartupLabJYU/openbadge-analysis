@@ -1,7 +1,7 @@
 import sys
 import os
 import itertools
-from sklearn.neighbors.kde import KernelDensity
+from sklearn.neighbors import KernelDensity
 import matplotlib.dates as mdates
 import scipy.signal as signal
 import datetime
@@ -10,8 +10,10 @@ import numpy as np
 import scipy.stats as stats
 import pandas as pd
 import matplotlib.pyplot as plt
-import warnings
-warnings.filterwarnings('ignore')
+
+#import warnings
+#warnings.filterwarnings('ignore')
+
 # if you want to use optimization for kde, uncomment the following two lines.
 # from sklearn.grid_search import GridSearchCV
 # from sklearn.cross_validation import LeaveOneOut

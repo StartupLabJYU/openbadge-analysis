@@ -42,10 +42,8 @@ def _guttman_transform(D, W, Zu, Xa, V):
     #        np.dot(B11, Zu) + np.dot(B12, Za) - np.dot(V12, Xa)
     #        )
 
-    return np.dot(
-            np.linalg.pinv(V11),
-            np.dot(B11, Zu) + np.dot(B12, Xa) - np.dot(V12, Xa)
-            )
+    return np.dot(np.linalg.pinv(V11),
+                  np.dot(B11, Zu) + np.dot(B12, Xa) - np.dot(V12, Xa))
 
 
 def _stress(D, W, X):
