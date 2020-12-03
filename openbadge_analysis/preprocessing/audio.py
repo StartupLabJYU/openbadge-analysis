@@ -23,8 +23,10 @@ def get_meet_sec(df_meet):
     """
     return a df with a datetime index rounded to second level.
     """
+    print("get_meet_sec")
     df_meet_sec = df_meet.copy()
     df_meet_sec.index = df_meet_sec.index.map(lambda x: x.replace(microsecond=0))
+    print("microseconds omitted")
     return df_meet_sec
 
 
@@ -33,7 +35,13 @@ def get_meet_flt(df_meet, window=8):
     data processing with median filter.
 
     """
-    df_flt = pd.rolling_median(df_meet, window=window)
+    print("get_meet_flt")
+    try:
+        df_flt = pd.rolling_median(df_meet, window=window)
+    except Exception as e:
+	# if more modern version of pandas than original
+	df_flt = df_meet.rolling(window=window).median()
+
     return df_flt
 
 
@@ -41,6 +49,7 @@ def get_df_cor(df_meeting, sel_users):
     """
     return df of correlation of two selected users.
     """
+    print("get_df_cor")
     df_meeting_sel = df_meeting[sel_users]
     df_sel_sec = get_meet_sec(df_meeting_sel)
     ts = []
@@ -80,6 +89,7 @@ def get_seps(dt_nys, prox=0.001, step=0.1, num_samples=200, bandwidth=2):
     """
     return cut-off points for all users
     """
+    print("get_seps")
     seps = []
     prox = 0.01
     for idx, user in enumerate(dt_nys):
@@ -108,6 +118,7 @@ def get_kldistance(dt_nys, bandwidth=2, prox=0.001, step=0.1, num_samples=200, p
     only for 4-user situations
     calculate kl-distance of two distributions (D_t and D_s)
     """
+    print("get_kldistance")
     klds, seps = [], []
     if plot is True:
         fig, axs = plt.subplots(2, 2, figsize=figsize,)
@@ -154,6 +165,7 @@ def get_ts_distribution(df_meet, df_spk):
     """
     get distributions for all subjects when they talk or keep silent
     """
+    print("get_ts_distribution")
     dt_nys = {}
     for user in df_meet.columns:
         ns = df_spk.loc[df_spk.speaker != user][user]
@@ -165,7 +177,10 @@ def get_ts_distribution(df_meet, df_spk):
 def get_spk_genuine(df_meet, thre):
     """
     get genuine spk
+
+    NOTICE: ANTTI: I had to butcher the code in order to get it 'working' with our data. There is no guarantee that the modifications are logically correct! 
     """
+    print("get_spk_genuine")
     df_meet_sec = get_meet_sec(df_meet)
     df_cor = df_meet_sec.groupby(df_meet_sec.index).corr().dropna()
     df_cor = pd.DataFrame((df_cor >= thre).T.all())
@@ -188,10 +203,48 @@ def get_spk_genuine(df_meet, thre):
     return df_spk_mean, df_spk_std
 
 
+def get_spk_genuine_v2(df_meet, thre):
+    """
+    get genuine spk
+
+    NOTICE: ANTTI: I had to butcher the code in order to get it 'working' with our data. There is no guarantee that the modifications are logically correct! 
+    """
+    print("get_spk_genuine_v2")
+    df_meet_sec = get_meet_sec(df_meet)
+    print("df_meet_sec.info():") # inform user
+    print(df_meet_sec.info()) # show info
+    df_cor = df_meet_sec.groupby(df_meet_sec.index).corr() #antti: originally .dropna()
+    print("df_corr ..dropna()")
+    print(df_cor.info())
+    df_cor = pd.DataFrame((df_cor >= thre).T.any()) #antti: originally .all())
+    df_cor.reset_index(inplace=True)
+    print("df_cor.info(): {}") # inform user
+    print(df_cor.info()) #inform user
+    df_cor.columns = ['datetime', 'member', 'val']
+    print("df_cor.head(): {}") # inform user
+    print(df_cor.head()) #inform user
+    ## Find those people whoes correlation with others are all higher than thre
+    df_cor = df_cor.pivot(index='datetime', columns='member', values='val')
+    df_mean_ori = df_meet_sec.groupby(df_meet_sec.index).agg(np.mean)
+    df_std_ori = df_meet_sec.groupby(df_meet_sec.index).agg(np.std)
+    df_mean = pd.DataFrame(df_mean_ori.T.idxmax(), columns=['speaker'])
+    ## combine 'correlation' and 'volume' to locate the speaker
+    df_comb = df_mean.merge(df_cor, left_index=True, right_index=True)
+    ## df_comb_sel contains the speaker information 
+    idx = [df_comb.ix[i, u ] for i,u in enumerate(df_comb.speaker)]
+    df_comb_sel = df_comb[idx][['speaker']]
+    ## get speakers' mean
+    df_spk_mean = df_comb_sel.merge(df_mean_ori, left_index=True, right_index=True)
+    ## get their std
+    df_spk_std = df_comb_sel.merge(df_std_ori, left_index=True, right_index=True)
+    return df_spk_mean, df_spk_std
+
+
 def get_spk_all(df_flt, df_spk_mean, df_spk_std, bandwidth=2):
     """
     get all spk
     """
+    print("get_spk_all")
     df_flt_sec = get_meet_sec(df_flt)
     gps_mean = df_flt_sec.groupby(df_flt_sec.index).mean()
     gps_std = df_flt_sec.groupby(df_flt_sec.index).std()
@@ -222,6 +275,7 @@ def get_spk_real(df_flt, df_speak_all, thre):
     """
     get real spk
     """
+    print("get_spk_real")
     df_mean_raw = df_speak_all[df_speak_all.index.duplicated(keep=False)].sort_index()
     df_mean_raw.reset_index(inplace=True)
     vals = [df_mean_raw.ix[i, u] for i, u in enumerate(df_mean_raw.speaker)]
