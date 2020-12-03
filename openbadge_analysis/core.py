@@ -87,7 +87,6 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
         batched_sample_data = list(map(json.loads, raw_data[first_data_row:]))  # Convert the raw sample data into a json object
 
     elif log_version == '2.0':
-        c = 0
         batched_sample_data = []
         for c, row in enumerate(raw_data[first_data_row:]):
             try:
@@ -96,28 +95,27 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
                     batched_sample_data.append(data['data'])
             except Exception as e:
                 if ignore_errors:
-                    logger.warning("ignored failure: %s", e, exc_info=True)
+                    logger.warning("ignored failure on line %d: %s", c + 1, e, exc_info=True)
                     continue
                 else:
-                    logger.error("unexpected failure: %s", e, exc_info=True)
+                    logger.error("unexpected failure on line %d: %s", c + 1, e, exc_info=True)
                     raise e
 
     else:
         #raise Exception('Must provide log version')
-        c = 0
+
         batched_sample_data = []
-        for row in raw_data[first_data_row:]:
-            c += 1
+        for c, row in enumerate(raw_data[first_data_row:]):
             try:
                 data = json.loads(row)
                 if data['type'] == 'audio received':
                     batched_sample_data.append(data['data'])
             except Exception as e:
                 if ignore_errors:
-                    logger.warning("ignored failure: %s", e, exc_info=True)
+                    logger.warning("ignored failure on line %d: %s", c + 1, e, exc_info=True)
                     continue
                 else:
-                    logger.error("unexpected failure: %s", e, exc_info=True)
+                    logger.error("unexpected failure on line %d: %s", c + 1, e, exc_info=True)
                     raise e
 
     return batched_sample_data
@@ -183,9 +181,8 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
 
     sample_data = []
 
-    for j in range(len(batched_sample_data)):
-        batch = {}
-        batch.update(batched_sample_data[j])  # Create a deep copy of the jth batch of samples
+    for j, _sample_data in enumerate(batched_sample_data):
+        batch = _sample_data.copy()  # Create a deep copy of the jth batch of samples
         samples = batch.pop('samples')
         if log_version == '1.0':
             reference_timestamp = batch.pop('timestamp') * 1000 + batch.pop('timestamp_ms')  # reference timestamp in milliseconds
@@ -195,12 +192,12 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
             sampleDelay = batch.pop('sample_period')
         else:
             # antti: we do not know what is the log_version but instead try just go around the problem 
+            logger.debug("Unknown log version")
             reference_timestamp = batch.pop('timestamp') * 1000  # reference timestamp in milliseconds
             sampleDelay = batch.pop('sample_period')
 
         for i, signal in enumerate(samples):
-            sample = {}
-            sample.update(batch)
+            sample = batch.copy()
             sample['signal'] = signal
 
             sample['timestamp'] = reference_timestamp + i * sampleDelay
@@ -219,7 +216,6 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
         df_sample_data.set_index(pd.DatetimeIndex(df_sample_data['datetime']), inplace=True)
         # The timestamps are in UTC. Convert these to EST
         #df_sample_data.index = df_sample_data.index.tz_localize('utc').tz_convert('US/Eastern')
-        df_sample_data.index.name = 'datetime'
         del df_sample_data['datetime']
         if(resample):
             grouped = df_sample_data.groupby('member')
@@ -250,14 +246,11 @@ def load_audio_chunks_as_json_objects_v2(file_object, first_data_row=0, data_lim
     raw_data = file_object.readlines()  # This is a list of strings
     file_has_lines = len(raw_data)  # number of lines in the data
 
-    last_data_row = first_data_row + data_limiter  # the last row to read from the list
-    if last_data_row > file_has_lines:
-        last_data_row = file_has_lines  # in case the last_data_row would have exceeded the actual number of rows
+    last_data_row = min(first_data_row + data_limiter, file_has_lines)  # the last row to read from the list
 
     c = 0
     batched_sample_data = []
-    limited_raw_data = raw_data[first_data_row:last_data_row] # limited range to collect data from
-    for row in limited_raw_data:
+    for c, row in enumerate(raw_data[first_data_row:last_data_row]):
         c = c + 1
         try:
             data = json.loads(row)
@@ -265,10 +258,10 @@ def load_audio_chunks_as_json_objects_v2(file_object, first_data_row=0, data_lim
                 batched_sample_data.append(data['data'])
         except Exception as e:
             if ignore_errors:
-                logger.warning("ignored failure: %s", e, exc_info=True)
+                logger.warning("ignored failure on line %d: %s", c + 1, e, exc_info=True)
                 continue
             else:
-                logger.error("unexpected failure: %s", e, exc_info=True)
+                logger.error("unexpected failure on line %d: %s", c + 1, e, exc_info=True)
                 raise e
 
     return batched_sample_data
@@ -300,18 +293,16 @@ def sample2data_v2(input_file_path, first_data_row=0, data_limiter=1000, datetim
         batched_sample_data = load_audio_chunks_as_json_objects_v2(file_object=input_file, first_data_row=first_data_row, data_limiter=data_limiter, log_version=log_version, ignore_errors=ignore_errors)
 
     sample_data = []
-    
+
     for j, _sample_data in enumerate(batched_sample_data):
-        batch = {}
-        batch.update(_sample_data)  # Create a deep copy of the jth batch of samples
+        batch = _sample_data.copy()  # Create a deep copy of the jth batch of samples
         samples = batch.pop('samples')
         # antti: This was the else clause in the original function. We do not know what is the log_version but instead try just go around the problem 
         reference_timestamp = batch.pop('timestamp') * 1000  # reference timestamp in milliseconds
         sampleDelay = batch.pop('sample_period')
 
         for i, signal in enumerate(samples):
-            sample = {}
-            sample.update(batch)
+            sample = batch.copy()
             sample['signal'] = signal
 
             sample['timestamp'] = reference_timestamp + i * sampleDelay
@@ -502,8 +493,7 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
         'datetime', 'member', 'badge_address', 'id'
     ))
 
-    fulldf['datetime'] = pd.to_datetime(fulldf['datetime'], unit='s', utc=True) \
-        .dt.tz_localize('UTC').dt.tz_convert(tz)
+    fulldf['datetime'] = pd.to_datetime(fulldf['datetime'], unit='s', utc=True).dt.tz_convert(tz)
 
     # Load chunks
     # A chunk contains a set of observations by a given badge at a given timestamp
@@ -541,3 +531,8 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
     ]).first()
 
     return fulldf
+
+
+@pd.api.extensions.register_dataframe_accessor("metadata")
+class Metadata(dict):
+    pass
