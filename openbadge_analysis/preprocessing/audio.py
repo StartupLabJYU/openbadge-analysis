@@ -36,11 +36,7 @@ def get_meet_flt(df_meet, window=8):
 
     """
     print("get_meet_flt")
-    try:
-        df_flt = pd.rolling_median(df_meet, window=window)
-    except Exception as e:
-	# if more modern version of pandas than original
-	df_flt = df_meet.rolling(window=window).median()
+    df_flt = df_meet.rolling(window=window).median()
 
     return df_flt
 
