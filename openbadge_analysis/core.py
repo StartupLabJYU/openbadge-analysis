@@ -6,6 +6,7 @@ import datetime
 import traceback
 import crc16
 import logging
+import codecs
 
 logger = logging.getLogger(__name__)
 
@@ -460,9 +461,8 @@ def mac_address_to_id(mac):
     """Converts a MAC address to an id used by the badges for the proximity pings.
     """
     # convert hex to bytes and reverse
-    macstr = mac.strip() # remove any leading/following white space from the string
-    macstr = mac.replace(':', '').decode('hex')[::-1]
-    crc = crc16.crc16xmodem(macstr, 0xFFFF)
+    macstr = mac.strip().replace(':', '')
+    crc = crc16.crc16xmodem(codecs.decode(macstr, "hex")[::-1], 0xFFFF)
     return crc
 
 
