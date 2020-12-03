@@ -5,6 +5,9 @@ import itertools
 import datetime
 import traceback
 import crc16
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 def is_meeting_metadata(json_record):
@@ -80,25 +83,23 @@ def load_audio_chunks_as_json_objects(file_object, log_version=None, ignore_erro
 
     if log_version == '1.0':
         first_data_row = 1
-        batched_sample_data = map(json.loads, raw_data[first_data_row:])  # Convert the raw sample data into a json object
+        batched_sample_data = list(map(json.loads, raw_data[first_data_row:]))  # Convert the raw sample data into a json object
 
     elif log_version == '2.0':
         c = 0
         batched_sample_data = []
-        for row in raw_data[first_data_row:]:
-            c += 1
+        for c, row in enumerate(raw_data[first_data_row:]):
             try:
                 data = json.loads(row)
                 if data['type'] == 'audio received':
                     batched_sample_data.append(data['data'])
             except Exception as e:
-                s = traceback.format_exc()
                 if ignore_errors:
-                    print("unexpected failure in line {}, skipping it ({})".format(c, e))
+                    logger.warning("ignored failure: %s", e, exc_info=True)
                     continue
                 else:
-                    print("unexpected failure in line {}, {} ,{}".format(c, e, s))
-                    raise
+                    logger.error("unexpected failure: %s", e, exc_info=True)
+                    raise e
 
     else:
         raise Exception('Must provide log version')
@@ -171,12 +172,11 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
         elif log_version == '2.0':
             reference_timestamp = batch.pop('timestamp') * 1000  # reference timestamp in milliseconds
             sampleDelay = batch.pop('sample_period')
-        numSamples = len(samples)
-        #numSamples = batch.pop('numSamples')
-        for i in range(numSamples):
+
+        for i, signal in enumerate(samples):
             sample = {}
             sample.update(batch)
-            sample['signal'] = samples[i]
+            sample['signal'] = signal
 
             sample['timestamp'] = reference_timestamp + i * sampleDelay
             sample_data.append(sample)
