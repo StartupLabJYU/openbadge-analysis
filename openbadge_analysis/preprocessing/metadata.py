@@ -75,10 +75,7 @@ def legacy_id_to_member_mapping(fileobject, time_bins_size='1min', tz='US/Easter
     del df['timestamp']
 
     # Group by id and resample
-    df = df.groupby([
-        pd.TimeGrouper(time_bins_size, key='datetime'),
-        'id'
-    ]).first()
+    df = df.groupby([pd.Grouper(freq = time_bins_size, key = 'datetime'), 'id']).first()
 
     # Extract series
     s = df.sort_index()['member']
