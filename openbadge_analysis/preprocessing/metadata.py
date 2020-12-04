@@ -169,9 +169,7 @@ def voltages(fileobject, time_bins_size='1min', tz='US/Eastern', skip_errors=Fal
 
     # Group by id and resample
     df = df.groupby([
-        pd.TimeGrouper(time_bins_size, key='datetime'),
-        'member'
-    ]).mean()
+        pd.Grouper(freq = time_bins_size, key = 'datetime'), 'member']).mean()
 
     df.sort_index(inplace=True)
 
