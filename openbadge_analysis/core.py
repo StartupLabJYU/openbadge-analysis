@@ -341,14 +341,14 @@ def sample2data_v2(input_file_path, first_data_row=0, data_limiter=1000, datetim
         return df_sample_data
 
 
-def is_speaking(df_meeting, sampleDelay=50):
-    frame_size = 1000  # milliseconds
-    median_window = 2 * 60 * 1000  # milliseconds
+def is_speaking(df_meeting, sampleDelay=50, clipping_value=120, avg_speech_power_threshold=42, frame_size=1000, median_window=120):
+    #frame_size = 1000  # milliseconds
+    median_window = median_window * frame_size  # milliseconds
     median_window = int(median_window / sampleDelay)
     power_window = int(frame_size / sampleDelay)
-    clipping_value = 120  # Maximum value of volume above which the signal is assumed to have non-speech external noise
+    #clipping_value = 120  # Maximum value of volume above which the signal is assumed to have non-speech external noise
     df_meeting = df_meeting.clip(upper=clipping_value)
-    avg_speech_power_threshold = 42
+    #avg_speech_power_threshold = 42
     # Calculate the rolling median and subtract this value from the volume
     df_median = df_meeting.apply(lambda x: x.rolling(min_periods=1, window=median_window, center=False).median())
     df_normalized = df_meeting - df_median
