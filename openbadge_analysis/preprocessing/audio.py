@@ -15,8 +15,8 @@ import matplotlib.pyplot as plt
 #warnings.filterwarnings('ignore')
 
 # if you want to use optimization for kde, uncomment the following two lines.
-# from sklearn.grid_search import GridSearchCV
-# from sklearn.cross_validation import LeaveOneOut
+#from sklearn.grid_search import GridSearchCV
+#from sklearn.cross_validation import LeaveOneOut
 
 
 def get_meet_sec(df_meet):
@@ -25,7 +25,7 @@ def get_meet_sec(df_meet):
     """
     print("get_meet_sec")
     df_meet_sec = df_meet.copy()
-    df_meet_sec.index = df_meet_sec.index.map(lambda x: x.replace(microsecond=0))
+    df_meet_sec.index = df_meet_sec.index.map(lambda x: x.replace(microsecond=0)) #ongelma?
     print("microseconds omitted")
     return df_meet_sec
 
@@ -190,8 +190,8 @@ def get_spk_genuine(df_meet, thre):
     # combine 'correlation' and 'volume' to locate the speaker
     df_comb = df_mean.merge(df_cor, left_index=True, right_index=True)
     # df_comb_sel contains the speaker information
-    idx = [df_comb.ix[i, u] for i, u in enumerate(df_comb.speaker)]
-    df_comb_sel = df_comb[idx][['speaker']]
+
+    df_comb_sel = pd.DataFrame(df_comb['speaker'])
     # get speakers' mean
     df_spk_mean = df_comb_sel.merge(df_mean_ori, left_index=True, right_index=True)
     # get their std
@@ -226,6 +226,7 @@ def get_spk_genuine_v2(df_meet, thre):
     df_mean = pd.DataFrame(df_mean_ori.T.idxmax(), columns=['speaker'])
     ## combine 'correlation' and 'volume' to locate the speaker
     df_comb = df_mean.merge(df_cor, left_index=True, right_index=True)
+    print(df_comb.head())
     ## df_comb_sel contains the speaker information 
     idx = [df_comb.ix[i, u ] for i,u in enumerate(df_comb.speaker)]
     df_comb_sel = df_comb[idx][['speaker']]
