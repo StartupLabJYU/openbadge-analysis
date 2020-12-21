@@ -207,7 +207,7 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
     if len(sample_data) == 0:
         return None
     df_sample_data['datetime'] = pd.to_datetime(df_sample_data['timestamp'], unit='ms')
-    df_sample_data['datetime'] = df_sample_data['datetime'] - np.timedelta64(4, 'h')  # note - hard coded EST time conversion
+    df_sample_data['datetime'] = df_sample_data['datetime'] + np.timedelta64(3, 'h')  # note - hard coded Helsinki time conversion
     del df_sample_data['timestamp']
 
     df_sample_data.sort_values('datetime')
@@ -215,7 +215,7 @@ def sample2data(input_file_path, datetime_index=True, resample=True, log_version
     if(datetime_index):
         df_sample_data.set_index(pd.DatetimeIndex(df_sample_data['datetime']), inplace=True)
         # The timestamps are in UTC. Convert these to EST
-        #df_sample_data.index = df_sample_data.index.tz_localize('utc').tz_convert('US/Eastern')
+        #df_sample_data.index = df_sample_data.index.tz_localize('utc').tz_convert('Europe/Helsinki')
         del df_sample_data['datetime']
         if(resample):
             grouped = df_sample_data.groupby('member')
@@ -349,9 +349,11 @@ def is_speaking(df_meeting, sampleDelay=50, clipping_value=120, avg_speech_power
     #clipping_value = 120  # Maximum value of volume above which the signal is assumed to have non-speech external noise
     df_meeting = df_meeting.clip(upper=clipping_value)
     #avg_speech_power_threshold = 42
+    
     # Calculate the rolling median and subtract this value from the volume
     df_median = df_meeting.apply(lambda x: x.rolling(min_periods=1, window=median_window, center=False).median())
     df_normalized = df_meeting - df_median
+    
     # Calculate power and apply avg speech power threshold
     df_energy = df_normalized.apply(np.square)
     df_power = df_energy.apply(lambda x: x.rolling(window=power_window, min_periods=1, center=False).mean())
