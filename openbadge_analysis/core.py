@@ -555,8 +555,6 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
 
     # Group by id and resample
     fulldf = fulldf.groupby([
-        pd.TimeGrouper(time_bins_size, key='datetime'),
-        'id'
-    ]).first()
+        pd.Grouper(freq = time_bins_size, key = 'datetime'), 'id' ]).first()
 
     return fulldf
