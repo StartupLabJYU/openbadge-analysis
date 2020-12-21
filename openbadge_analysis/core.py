@@ -11,6 +11,35 @@ import codecs
 logger = logging.getLogger(__name__)
 
 
+def _register_metadata_property():
+    """
+    Register metadata property for pandas dataframe.
+
+    In old version of pandas it was possible to define properties into dataframes
+    at runtime. It was used to declare `metadata` property, which was copied between
+    dataframes. For backwards compatibility similar property needs to be defined
+    here:
+        >>> df = pd.DataFrame()
+        >>> df.metadata = {"spam": "ham"}
+
+    It _might_ cause compatibility problems, so check none exists yet. Or if
+    one does, it's ours.
+    """
+
+    if hasattr(pd.DataFrame, "metadata"):
+        # Sanity check for metadata property
+        assert not hasattr(pd.DataFrame.metadata, "_openbadge_metadata"), "DataFrame.metadata is not openbadge metadata"
+    else:
+        @pd.api.extensions.register_dataframe_accessor("metadata")
+        class OpenbadgeMetadata(dict):
+            # Add fingerprint
+            _openbadge_metadata = True
+
+
+# Add `metadata` dictionary into pandas dataframe.
+_register_metadata_property()
+
+
 def is_meeting_metadata(json_record):
     """
     returns true if given record is a header
@@ -531,8 +560,3 @@ def load_member_badges_from_logs(logs, log_version=None, log_kind='audio', time_
     ]).first()
 
     return fulldf
-
-
-@pd.api.extensions.register_dataframe_accessor("metadata")
-class Metadata(dict):
-    pass
