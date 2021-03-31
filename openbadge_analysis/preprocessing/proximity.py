@@ -42,8 +42,9 @@ def member_to_badge_proximity(fileobject, time_bins_size='1min', tz="US/Eastern"
         readfile(fileobject),
         columns=('timestamp', 'member', 'observed_id', 'rssi', 'count')
     )
-    df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(tz)
-    
+    if tz:
+        df['datetime'] = pd.to_datetime(df['timestamp'], unit='s', utc=True).dt.tz_convert(tz)
+
     del df['timestamp']
 
     # Group per time bins, member and observed_id,
