@@ -27,7 +27,7 @@ def extract_groups(m2m):
     """
     groups = m2m.groupby('datetime').apply(
         lambda df:
-        pd.Series([frozenset(c) for c in nx.connected_components(nx.from_pandas_dataframe(df.reset_index(), 'member1', 'member2'))])
+        pd.Series([frozenset(c) for c in nx.connected_components(nx.from_pandas_edgelist(df.reset_index(), 'member1', 'member2'))])
     )
     groups.name = 'members'
 
@@ -86,7 +86,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
     n = len(groups)
 
     # Convert the DataFrame to an array for fast indexing
-    ga = groups.as_matrix()
+    ga = groups.values
 
     # `dist` is the distance matrix of gatherings, "indexed by groups"
     # In other words, `dist` has a column/row for each group.  For each group,
@@ -108,7 +108,7 @@ def gather_groups(groups, distance_threshold=.49, gamma=.08):
 
     # Mapping group index -> gathering index
     # It's initialized as `i -> i` for all i
-    grp2gth = dict(zip(range(n)), range(n))
+    grp2gth = dict(zip(range(n), range(n)))
     # Mapping gathering index -> groups indices
     # It's initialized as `i -> [i]` for all i
     gth2grp = dict(zip(range(n), [[i] for i in range(n)]))
